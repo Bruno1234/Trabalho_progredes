@@ -37,7 +37,7 @@ resource "libvirt_volume" "client_disk" {
 
 # Cloud-init para servidor
 data "template_file" "cloudinit_dhcp_server" {
-  template = file("${path.module}/cloud_init_dhcp_server.cfg")
+  template = file("${path.module}/cloud-init-cloud-init-dhcp-server.yaml")
 }
 
 resource "libvirt_cloudinit_disk" "dhcp_server_cloudinit" {
@@ -46,9 +46,10 @@ resource "libvirt_cloudinit_disk" "dhcp_server_cloudinit" {
   pool      = "default"
 }
 
+
 # Cloud-init para cliente
 data "template_file" "cloudinit_dhcp_client" {
-  template = file("${path.module}/cloud_init_dhcp_client.cfg")
+  template = file("${path.module}/cloud-init-cloud-init-dhcp-client.yaml")
 }
 
 resource "libvirt_cloudinit_disk" "dhcp_client_cloudinit" {

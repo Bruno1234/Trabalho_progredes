@@ -4,8 +4,8 @@ users:
   - name: aluno
     plain_text_passwd: "1234"
     lock_passwd: false
-    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
 
 write_files:
   - path: /usr/local/bin/request-ip.sh
@@ -13,8 +13,8 @@ write_files:
     content: |
       #!/bin/bash
       apt-get update
-      apt-get install -y net-tools isc-dhcp-client
-      iface=$(ip link | awk -F: '$0 !~ "lo|virbr|wl|^[^0-9]"{print $2;getline}' | head -n 1 | tr -d ' ')
+      apt-get install -y isc-dhcp-client net-tools
+      iface=$(ip link | awk -F: '$0 ~ "^[0-9]+: ens" {print $2}' | tr -d ' ')
       dhclient -v $iface
 
 runcmd:

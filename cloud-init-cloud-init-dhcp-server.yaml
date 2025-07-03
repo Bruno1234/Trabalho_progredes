@@ -1,0 +1,55 @@
+#cloud-config
+hostname: dhcp-server
+users:
+  - name: aluno
+    plain_text_passwd: "1234"
+    lock_passwd: false
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+
+write_files:
+  - path: /etc/dhcp/dhcpd.conf
+    permissions: '0644'
+    content: |
+      subnet 192.168.122.0 netmask 255.255.255.0 {
+        range 192.168.122.100 192.168.122.200;
+        option routers 192.168.122.10;
+        option domain-name-servers 8.8.8.8;
+        default-lease-time 600;
+        max-lease-time 7200;
+      }
+
+  - path: /usr/local/bin/setup-dhcp.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      echo "[+] Atualizando pacotes..."
+      apt-get update
+
+      echo "[+] Instalando dependências..."
+      apt-get install -y isc-dhcp-server net-tools iproute2 ufw
+
+      echo "[+] Corrigindo usuário e grupo dhcpd..."
+      getent group dhcpd >/dev/null || groupadd --system dhcpd
+      id dhcpd >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin --gid dhcpd dhcpd
+
+      echo "[+] Detectando interface de rede..."
+      iface=$(ip link | awk -F: '$0 ~ "^[0-9]+: ens" {print $2}' | tr -d ' ' | head -n1)
+      echo "INTERFACESv4=\"$iface\"" > /etc/default/isc-dhcp-server
+
+      echo "[+] Aplicando configuração de rede..."
+      netplan apply || true
+
+      echo "[+] Desativando firewall (ufw)..."
+      ufw disable
+
+      echo "[+] Ativando IP forwarding..."
+      grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf || echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+      sysctl -p
+
+      echo "[+] Ativando e reiniciando o serviço DHCP..."
+      systemctl enable isc-dhcp-server
+      systemctl restart isc-dhcp-server
+
+runcmd:
+  - bash /usr/local/bin/setup-dhcp.sh
